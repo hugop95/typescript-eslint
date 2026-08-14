@@ -12,6 +12,8 @@ import {
   getParserServices,
   isAwaitKeyword,
   isTypeAnyType,
+  isStartOfArrowFunctionBodyNeedingParentheses,
+  isStartOfExpressionStatementNeedingParentheses,
   needsToBeAwaited,
   nullThrows,
   NullThrowsReasons,
@@ -77,13 +79,39 @@ export default createRule<[], MessageId>({
             suggest: [
               {
                 messageId: 'removeAwait',
-                fix(fixer): TSESLint.RuleFix {
+                fix(fixer): TSESLint.RuleFix[] {
                   const awaitKeyword = nullThrows(
                     context.sourceCode.getFirstToken(node, isAwaitKeyword),
                     NullThrowsReasons.MissingToken('await', 'await expression'),
                   );
 
-                  return fixer.remove(awaitKeyword);
+                  const firstOperandToken = nullThrows(
+                    context.sourceCode.getTokenAfter(awaitKeyword),
+                    NullThrowsReasons.MissingToken(
+                      'operand',
+                      'await expression',
+                    ),
+                  );
+
+                  const fixes = [fixer.remove(awaitKeyword)];
+                  if (
+                    isStartOfArrowFunctionBodyNeedingParentheses(
+                      node,
+                      firstOperandToken,
+                      context.sourceCode,
+                    ) ||
+                    isStartOfExpressionStatementNeedingParentheses(
+                      node,
+                      firstOperandToken,
+                    )
+                  ) {
+                    fixes.push(
+                      fixer.insertTextBefore(awaitArgumentEsNode, '('),
+                      fixer.insertTextAfter(awaitArgumentEsNode, ')'),
+                    );
+                  }
+
+                  return fixes;
                 },
               },
             ],

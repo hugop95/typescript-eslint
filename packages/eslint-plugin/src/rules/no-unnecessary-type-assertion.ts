@@ -17,9 +17,9 @@ import {
   getModifiers,
   getParserServices,
   isNullableType,
-  isStartOfArrowFunctionBody,
-  isStartOfExpressionStatement,
   isTypeFlagSet,
+  isStartOfArrowFunctionBodyNeedingParentheses,
+  isStartOfExpressionStatementNeedingParentheses,
   nullThrows,
   NullThrowsReasons,
 } from '../util';
@@ -798,24 +798,22 @@ export default createRule<Options, MessageIds>({
             NullThrowsReasons.MissingToken('>', 'type annotation'),
           );
           // Removing the angle brackets leaves the asserted operand at the
-          // assertion's position, so its first token leads whatever the
-          // assertion led. A leading `{`/`function`/`class` at the start of an
-          // expression statement is parsed as a block / function or class
-          // declaration, and a leading `{` at the start of a concise arrow body
-          // is parsed as a block body. In those positions the operand must be
-          // wrapped in parentheses to stay an expression.
+          // assertion's position, where it may need to be parenthesized to
+          // remain an expression.
           const firstOperandToken = nullThrows(
             context.sourceCode.getTokenAfter(closingAngleBracket),
             NullThrowsReasons.MissingToken('operand', 'type assertion'),
           );
-          const breaksExpressionStatement =
-            ['{', 'function', 'class'].includes(firstOperandToken.value) &&
-            isStartOfExpressionStatement(node);
-          const breaksArrowFunctionBody =
-            firstOperandToken.value === '{' &&
-            isStartOfArrowFunctionBody(node, context.sourceCode);
           const needsParens =
-            breaksExpressionStatement || breaksArrowFunctionBody;
+            isStartOfArrowFunctionBodyNeedingParentheses(
+              node,
+              firstOperandToken,
+              context.sourceCode,
+            ) ||
+            isStartOfExpressionStatementNeedingParentheses(
+              node,
+              firstOperandToken,
+            );
 
           const fixes: RuleFix[] = [];
           if (needsParens) {
@@ -864,15 +862,23 @@ export default createRule<Options, MessageIds>({
           messageId: doubleAssertionResult,
           fix(fixer) {
             const originalExpr = getOriginalExpression(node);
-            let text = context.sourceCode.getText(originalExpr);
-            if (
-              originalExpr.type === AST_NODE_TYPES.ObjectExpression &&
-              node.parent.type === AST_NODE_TYPES.ArrowFunctionExpression &&
-              node.parent.body === node
-            ) {
-              text = `(${text})`;
-            }
-            return fixer.replaceText(node, text);
+            const text = context.sourceCode.getText(originalExpr);
+
+            const firstOperandToken = nullThrows(
+              context.sourceCode.getFirstToken(originalExpr),
+              NullThrowsReasons.MissingToken('operand', 'type assertion'),
+            );
+            const needsParens =
+              isStartOfArrowFunctionBodyNeedingParentheses(
+                node,
+                firstOperandToken,
+                context.sourceCode,
+              ) ||
+              isStartOfExpressionStatementNeedingParentheses(
+                node,
+                firstOperandToken,
+              );
+            return fixer.replaceText(node, needsParens ? `(${text})` : text);
           },
         });
       }

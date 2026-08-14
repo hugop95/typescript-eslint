@@ -755,6 +755,143 @@ Promise.all([
     },
     {
       code: `
+async function test() {
+  await { a: 1 };
+}
+      `,
+      errors: [
+        {
+          line: 3,
+          messageId: 'await',
+          suggestions: [
+            {
+              messageId: 'removeAwait',
+              output: `
+async function test() {
+   ({ a: 1 });
+}
+      `,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: `
+async function test() {
+  await function () {};
+}
+      `,
+      errors: [
+        {
+          line: 3,
+          messageId: 'await',
+          suggestions: [
+            {
+              messageId: 'removeAwait',
+              output: `
+async function test() {
+   (function () {});
+}
+      `,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: `
+async function test() {
+  await class {};
+}
+      `,
+      errors: [
+        {
+          line: 3,
+          messageId: 'await',
+          suggestions: [
+            {
+              messageId: 'removeAwait',
+              output: `
+async function test() {
+   (class {});
+}
+      `,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: noFormat`
+async function test() {
+  await ({ a: 1 });
+}
+      `,
+      errors: [
+        {
+          line: 3,
+          messageId: 'await',
+          suggestions: [
+            {
+              messageId: 'removeAwait',
+              output: `
+async function test() {
+   ({ a: 1 });
+}
+      `,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: 'async () => await { a: 1 };',
+      errors: [
+        {
+          line: 1,
+          messageId: 'await',
+          suggestions: [
+            {
+              messageId: 'removeAwait',
+              output: 'async () =>  ({ a: 1 });',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: noFormat`async () => await { a: 1 }.a + 1;`,
+      errors: [
+        {
+          line: 1,
+          messageId: 'await',
+          suggestions: [
+            {
+              messageId: 'removeAwait',
+              output: 'async () =>  ({ a: 1 }.a) + 1;',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: noFormat`async () => (await { a: 1 });`,
+      errors: [
+        {
+          line: 1,
+          messageId: 'await',
+          suggestions: [
+            {
+              messageId: 'removeAwait',
+              output: 'async () => ( { a: 1 });',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      code: `
 class NonPromise extends Array {}
 await new NonPromise();
       `,

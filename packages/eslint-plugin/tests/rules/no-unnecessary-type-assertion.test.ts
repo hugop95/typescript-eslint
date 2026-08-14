@@ -2877,6 +2877,71 @@ fn1(() => {
       output: 'const foo = () => ({ lol: 123 as number }.lol) + 54321;',
     },
     {
+      code: noFormat`<{ a: number }><unknown>{ a: 1 };`,
+      errors: [
+        {
+          column: 1,
+          endColumn: 33,
+          endLine: 1,
+          line: 1,
+          messageId: 'unnecessaryAssertion',
+        },
+      ],
+      output: '({ a: 1 });',
+    },
+    {
+      code: noFormat`<number><unknown>function Fun() {}.length;`,
+      errors: [
+        {
+          column: 1,
+          endColumn: 42,
+          endLine: 1,
+          line: 1,
+          messageId: 'unnecessaryAssertion',
+        },
+      ],
+      output: '(function Fun() {}.length);',
+    },
+    {
+      code: noFormat`<number><unknown>class Clazz {}.length;`,
+      errors: [
+        {
+          column: 1,
+          endColumn: 39,
+          endLine: 1,
+          line: 1,
+          messageId: 'unnecessaryAssertion',
+        },
+      ],
+      output: '(class Clazz {}.length);',
+    },
+    {
+      code: noFormat`const foo = () => <number><unknown>{ lol: 123 }.lol + 54321;`,
+      errors: [
+        {
+          column: 19,
+          endColumn: 52,
+          endLine: 1,
+          line: 1,
+          messageId: 'unnecessaryAssertion',
+        },
+      ],
+      output: 'const foo = () => ({ lol: 123 }.lol) + 54321;',
+    },
+    {
+      code: noFormat`const foo = () => ({ lol: 123 } as unknown as { lol: number });`,
+      errors: [
+        {
+          column: 20,
+          endColumn: 62,
+          endLine: 1,
+          line: 1,
+          messageId: 'unnecessaryAssertion',
+        },
+      ],
+      output: 'const foo = () => ({ lol: 123 });',
+    },
+    {
       code: `
 declare const maybeFn: ((arg: string | number) => void) | undefined;
 declare const s: string;
